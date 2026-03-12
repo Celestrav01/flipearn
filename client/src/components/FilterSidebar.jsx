@@ -36,6 +36,20 @@ const FilterSidebar = ({ showFilterPhone, setShowFilterPhone, filters, setFilter
         setFilters({ ...filters, ...newFilters })
     }
 
+    const onClearFilters = () => {
+        if (search) {
+            navigate("/marketplace")
+        }
+        setFilters({
+            platform: null,
+            maxPrice: 100000,
+            minFollowers: 0,
+            niche: null,
+            verified: false,
+            monetized: false,
+        })
+    }
+
     const platforms = [
         { value: "youtube", label: "YouTube" },
         { value: "instagram", label: "Instagram" },
@@ -75,7 +89,7 @@ const FilterSidebar = ({ showFilterPhone, setShowFilterPhone, filters, setFilter
                         <h3 className='font-semibold'>Filters</h3>
                     </div>
                     <div className='flex items-center gap-2'>
-                        <X className='size-6 text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded  transition-colors cursor-pointer' />
+                        <X onClick={onClearFilters} className='size-6 text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded  transition-colors cursor-pointer' />
                         <button onClick={() => setShowFilterPhone(false)} className='sm:hidden text-sm border text-gray-700 px-3 py-1 rounded'>Apply</button>
                     </div>
                 </div>
@@ -161,7 +175,7 @@ const FilterSidebar = ({ showFilterPhone, setShowFilterPhone, filters, setFilter
                 {/* Nice Filters */}
                 <div>
                     <button onClick={() => toggleSection("niche")} className='flex items-center justify-between w-full mb-3'>
-                        <label className='text-sm font-medium text-gray-800'>Minimum Followers</label>
+                        <label className='text-sm font-medium text-gray-800'>Niche</label>
                         <ChevronDown className={`size-4 transition-transform ${expandedSections.niche ? "rotate-180" : ""}`} />
                     </button>
                     {expandedSections.niche && (
@@ -172,10 +186,32 @@ const FilterSidebar = ({ showFilterPhone, setShowFilterPhone, filters, setFilter
                             <option value="0">All niches</option>
                             {niches.map((niche) => (
                                 <option key={niche.value} value={niche.value}>
-                                    {niche.value}
+                                    {niche.label}
                                 </option>
                             ))}
                         </select>
+                    )}
+                </div>
+
+                {/* Verification Status */}
+                <div>
+                    <button onClick={() => toggleSection("status")} className='flex items-center justify-between w-full mb-3'>
+                        <label className='text-sm font-medium text-gray-800'>Account Status</label>
+                        <ChevronDown className={`size-4 transition-transform ${expandedSections.status ? "rotate-180" : ""}`} />
+                    </button>
+                    {expandedSections.status && (
+                        <div className='space-y-3'>
+                            <label className='flex items-center space-x-2 cursor-pointer'>
+                                <input type="checkbox" checked={filters.verified || false}
+                                    onChange={(e) => onFiltersChange({ ...filters, verified: e.target.checked })} />
+                                <span className='text-sm text-gray-700'>Verified accounts only</span>
+                            </label>
+                            <label className='flex items-center space-x-2 cursor-pointer'>
+                                <input type="checkbox" checked={filters.monetized || false}
+                                    onChange={(e) => onFiltersChange({ ...filters, monetized: e.target.checked })} />
+                                <span className='text-sm text-gray-700'>Monetized accounts only</span>
+                            </label>
+                        </div>
                     )}
                 </div>
             </div>
