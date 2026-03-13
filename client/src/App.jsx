@@ -9,6 +9,7 @@ import MyOrders from './pages/MyOrders'
 import Loading from './pages/Loading'
 import Navbar from './components/Navbar'
 import Message from './pages/Message'
+import ChatBox from './components/chatbox'
 
 
 const App = () => {
@@ -29,7 +30,7 @@ const App = () => {
         <Route path='/messages' element={<Message/>} />
         <Route path='/loading' element={<Loading/>} />
       </Routes>
-
+      <ChatBox/>
     </div>
   )
 }

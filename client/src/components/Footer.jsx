@@ -33,7 +33,7 @@ const Footer = () => {
                     </div>
                 </div>
                 <p className="py-4 text-center border-t mt-6 border-slate-200">
-                    Copyright 2026 ©flipearn All Right Reserved.
+                     © 2026 flipearn. All Right Reserved.
                 </p>
             </footer>
     </>
