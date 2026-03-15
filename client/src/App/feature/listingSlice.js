@@ -6,6 +6,7 @@ const listingSlice = createSlice({
     name: "listing",
     initialState: {
         listings : dummyListings,
+        userListings: dummyListings,
         balance: {
             earned: 0,
             withdrawn: 0,
