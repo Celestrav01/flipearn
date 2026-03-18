@@ -1,92 +1,199 @@
+// import { Inngest } from "inngest";
+// import prisma from "../configs/prisma.js";
+
+// // Create a client to send and receive events
+// export const inngest = new Inngest({ id: "marketplace-profile" });
+
+// // Inngest function to save user data to a database
+
+// const syncUserCreation = inngest.createFunction(
+//     { id: "sync-user-from-clerk" },
+//     { event: "clerk/user.created" },
+//     async ({ event }) => {
+//         const { data } = event
+//         // Check if user already exist in database
+//         const user = await prisma.user.findFirst({
+//             where: { id: data.id }
+//         })
+//         if (user) {  
+//             // Update user data if it exists
+//             await prisma.user.update({
+//                 where: { id: data.id },
+//                 data: {
+//                     email: data?.email_addresses[0]?.email_address,
+//                     name: data?.first_name + " " + data?.last_name,
+//                     image: data?.image_url,
+//                 }
+//             })
+//             return;
+//         }
+//         await prisma.user.create({
+//             data: {
+//                 id: data.id,
+//                 email: data?.email_addresses[0]?.email_address,
+//                 name: data?.first_name + " " + data?.last_name,
+//                 image: data?.image_url,
+//             }
+//         })
+//     },
+// );
+
+// // Inngest function to Delete user data from database
+
+// const syncUserDeletion = inngest.createFunction(
+//     { id: "delete-user-with-clerk" },
+//     { event: "clerk/user.deleted" },
+//     async ({ event }) => {
+//         const { data } = event
+
+//         const listings = await prisma.listing.findMany({
+//             where: { ownerId: data.id }
+//         })
+
+//         const chats = await prisma.chat.findMany({
+//             where: { OR: [{ ownerUserId: data.id }, { chatUserId: data.id }] }
+//         })
+
+//         const transactions = await prisma.transaction.findMany({
+//             where: { userId: data.id }
+//         })
+
+//         if (listings.length === 0 && chats.length === 0 && transactions.length === 0) {
+//             await prisma.user.delete({ where: { id: data.id } })
+//         } else {
+//             await prisma.listing.updateMany({
+//                 where: { ownerId: data.id },
+//                 data: { status: "inactive" }
+//             })
+//         }
+//     },
+// );
+
+// // Inngest function to Update user data to a database
+
+// const syncUserUpdation = inngest.createFunction(
+//     { id: "update-user-from-clerk" },
+//     { event: "clerk/user.updated" },
+//     async ({ event }) => {
+//         const { data } = event 
+
+//         await prisma.user.update({
+//             where: { id: data.id },
+//             data: {
+//                 email: data?.email_addresses[0]?.email_address,
+//                 name: data?.first_name + " " + data?.last_name,
+//                 image: data?.image_url,
+//             }
+//         })
+//     },
+// );
+
+
+// export const functions = [syncUserCreation, syncUserDeletion, syncUserUpdation];
+
 import { Inngest } from "inngest";
 import prisma from "../configs/prisma.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "marketplace-profile" });
 
-// Inngest function to save user data to a database
 
+// Inngest function to save user data to a database
 const syncUserCreation = inngest.createFunction(
     { id: "sync-user-from-clerk" },
     { event: "clerk/user.created" },
     async ({ event }) => {
-        const { data } = event
-        // Check if user already exist in database
-        const user = await prisma.user.findFirst({
-            where: { id: data.id }
-        })
-        if (user) {  
-            // Update user data if it exists
-            await prisma.user.update({
-                where: { id: data.id },
-                data: {
-                    email: data?.email_addresses[0]?.email_address,
-                    name: data?.first_name + " " + data?.last_name,
-                    image: data?.image_url,
-                }
-            })
-            return;
-        }
-        await prisma.user.create({
-            data: {
+        const { data } = event;
+
+        console.log("RUNNING CREATE FUNCTION");
+        console.log("USER ID:", data.id);
+
+        await prisma.user.upsert({
+            where: { id: data.id },
+            update: {
+                email: data?.email_addresses[0]?.email_address,
+                name: data?.first_name + " " + data?.last_name,
+                image: data?.image_url,
+            },
+            create: {
                 id: data.id,
                 email: data?.email_addresses[0]?.email_address,
                 name: data?.first_name + " " + data?.last_name,
                 image: data?.image_url,
             }
-        })
+        });
     },
 );
 
-// Inngest function to Delete user data from database
 
+// Inngest function to Delete user data from database
 const syncUserDeletion = inngest.createFunction(
     { id: "delete-user-with-clerk" },
     { event: "clerk/user.deleted" },
     async ({ event }) => {
-        const { data } = event
+        const { data } = event;
+
+        console.log("RUNNING DELETE FUNCTION");
+        console.log("USER ID:", data.id);
 
         const listings = await prisma.listing.findMany({
             where: { ownerId: data.id }
-        })
+        });
 
         const chats = await prisma.chat.findMany({
             where: { OR: [{ ownerUserId: data.id }, { chatUserId: data.id }] }
-        })
+        });
 
         const transactions = await prisma.transaction.findMany({
             where: { userId: data.id }
-        })
+        });
 
         if (listings.length === 0 && chats.length === 0 && transactions.length === 0) {
-            await prisma.user.delete({ where: { id: data.id } })
+            // SAFE DELETE (no crash)
+            await prisma.user.deleteMany({
+                where: { id: data.id }
+            });
         } else {
             await prisma.listing.updateMany({
                 where: { ownerId: data.id },
                 data: { status: "inactive" }
-            })
+            });
         }
     },
 );
 
-// Inngest function to Update user data to a database
 
+// Inngest function to Update user data to a database
 const syncUserUpdation = inngest.createFunction(
     { id: "update-user-from-clerk" },
     { event: "clerk/user.updated" },
     async ({ event }) => {
-        const { data } = event 
+        const { data } = event;
 
-        await prisma.user.update({
+        console.log("RUNNING UPDATE FUNCTION");
+        console.log("USER ID:", data.id);
+
+        // FIX: update → upsert (no crash if user missing)
+        await prisma.user.upsert({
             where: { id: data.id },
-            data: {
+            update: {
+                email: data?.email_addresses[0]?.email_address,
+                name: data?.first_name + " " + data?.last_name,
+                image: data?.image_url,
+            },
+            create: {
+                id: data.id,
                 email: data?.email_addresses[0]?.email_address,
                 name: data?.first_name + " " + data?.last_name,
                 image: data?.image_url,
             }
-        })
+        });
     },
 );
 
 
-export const functions = [syncUserCreation, syncUserDeletion, syncUserUpdation];
+export const functions = [
+    syncUserCreation,
+    syncUserDeletion,
+    syncUserUpdation
+];
