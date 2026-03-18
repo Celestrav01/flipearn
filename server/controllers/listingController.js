@@ -1,5 +1,5 @@
-import imagekit from "../configs/imageKit";
-import prisma from "../configs/prisma";
+import imagekit from "../configs/imageKit.js";
+import prisma from "../configs/prisma.js";
 import fs from 'fs'
 
 
