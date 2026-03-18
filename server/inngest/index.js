@@ -105,8 +105,7 @@ const syncUserCreation = inngest.createFunction(
     async ({ event }) => {
         const { data } = event;
 
-        console.log("RUNNING CREATE FUNCTION");
-        console.log("USER ID:", data.id);
+       
 
         await prisma.user.upsert({
             where: { id: data.id },
@@ -133,8 +132,7 @@ const syncUserDeletion = inngest.createFunction(
     async ({ event }) => {
         const { data } = event;
 
-        console.log("RUNNING DELETE FUNCTION");
-        console.log("USER ID:", data.id);
+       
 
         const listings = await prisma.listing.findMany({
             where: { ownerId: data.id }
@@ -170,8 +168,7 @@ const syncUserUpdation = inngest.createFunction(
     async ({ event }) => {
         const { data } = event;
 
-        console.log("RUNNING UPDATE FUNCTION");
-        console.log("USER ID:", data.id);
+       
 
         // FIX: update → upsert (no crash if user missing)
         await prisma.user.upsert({
