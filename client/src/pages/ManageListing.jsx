@@ -1,8 +1,11 @@
 import { Loader2Icon, Upload } from 'lucide-react';
 import React, { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from "react-hot-toast";
+import { useAuth, useUser } from '@clerk/clerk-react'
+import api from '../configs/axios';
+import { getAllPublicListing, getAllUserListing } from '../App/feature/listingSlice';
 
 
 const ManageListing = () => {
@@ -10,6 +13,9 @@ const ManageListing = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { userListings } = useSelector((state) => state.listing)
+
+  const { getToken } = useAuth()
+  const dispatch = useDispatch()
 
   const [loadingListing, setLoadingListing] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -84,6 +90,77 @@ const ManageListing = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    toast.loading('Saving...');
+    const dataCopy = structuredClone(formData);
+
+    try {
+      if (isEditing) {
+        dataCopy.images = formData.images.filter(
+          (image) => typeof image === "string"
+        );
+
+        const formDataInstance = new FormData();
+        formDataInstance.append(
+          'accountDetails',
+          JSON.stringify(dataCopy)
+        )
+        formData.images
+          .filter((image) => typeof image !== 'string')
+          .forEach((image) => {
+            formDataInstance.append('images', image);
+          });
+
+        const token = await getToken();
+
+        const { data } = await api.put(
+          '/api/listing',
+          formDataInstance,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        toast.dismissAll();
+        toast.success(data.message);
+
+        dispatch(getAllUserListing({ getToken }))
+        dispatch(getAllPublicListing())
+        navigate('/my-listings')
+      } else {
+        delete dataCopy.images;
+
+        const formDataInstance = new FormData();
+        formDataInstance.append('accountDetails', JSON.stringify(dataCopy));
+
+        formData.images.forEach((image) => {
+          formDataInstance.append('images', image);
+        });
+
+        const token = await getToken();
+
+        const { data } = await api.post(
+          '/api/listing',
+          formDataInstance,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        toast.dismissAll();
+        toast.success(data.message);
+        dispatch(getAllUserListing({ getToken }))
+        dispatch(getAllPublicListing())
+        navigate('/my-listings')
+      }
+
+    } catch (error) {
+      toast.dismissAll();
+      toast.error(error?.response?.data?.message || error.message);
+    }
   };
 
   if (loadingListing) {

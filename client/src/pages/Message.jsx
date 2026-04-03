@@ -4,22 +4,24 @@ import { MessageCircle, Search } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import { useDispatch } from 'react-redux';
 import { setChat } from '../App/feature/chatSlice';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import api from '../configs/axios';
+import toast from 'react-hot-toast';
 
 
 const Message = () => {
 
-  const user = { id: "user_1" };
+
 
   const [chats, setChats] = useState([])
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   const dispatch = useDispatch()
+  const { getToken } = useAuth()
 
-  const fetchUserChats = async () => {
-    setChats(dummyChats)
-    setLoading(false)
-  }
+  const { user, isLoaded } = useUser()
+
 
   const formatTime = (dateString) => {
     if (!dateString) return;
@@ -48,21 +50,34 @@ const Message = () => {
     })
   }, [chats, searchQuery])
 
-  const handleOpenChat = (chat)=>{
-    dispatch(setChat({listing: chat.listing, chatId: chat.id}))
+  const handleOpenChat = (chat) => {
+    dispatch(setChat({ listing: chat.listing, chatId: chat.id }))
   }
 
+
+  const fetchUserChats = async () => {
+    try {
+      const token = await getToken();
+      const { data } = await api.get("/api/chat/user", { headers: { Authorization: `Bearer ${token}` } })
+      setChats(data.chats)
+      setLoading(false)
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+      console.log(error);
+      setLoading(false);
+    }
+  }
+  
   useEffect(() => {
+    if (user && isLoaded) {
+      fetchUserChats()
+      const interval = setInterval(() => {
+        fetchUserChats();
+      }, 10 * 1000);
+      return () => clearInterval(interval)
+    }
 
-    fetchUserChats();
-
-    const interval = setInterval(() => {
-      fetchUserChats();
-    }, 10 * 1000);
-
-    return () => clearInterval(interval);
-
-  }, []);
+  }, [user, isLoaded])
 
   return (
     <div className='mx-auto min-h-screen px-6 md:px-16 lg:px-24 xl:px-32'>
@@ -105,8 +120,8 @@ const Message = () => {
             {filteredChats.map((chat) => {
               const chatUser = chat.chatUserId === user?.id ? chat.ownerUser : chat.chatUser;
               return (
-                <button onClick={()=> handleOpenChat(chat)}
-                 key={chat.id} className='w-full p-4 hover:bg-gray-50 transition-colors text-left'>
+                <button onClick={() => handleOpenChat(chat)}
+                  key={chat.id} className='w-full p-4 hover:bg-gray-50 transition-colors text-left'>
                   <div className='flex items-start space-x-4'>
                     <div className='flex-shrink-0'>
                       <img src={chatUser?.image} alt={chat?.chatUser?.name}

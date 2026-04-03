@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Marketplace from './pages/Marketplace'
@@ -18,11 +18,30 @@ import CredentialChange from './pages/admin/CredentialChange'
 import AllListings from './pages/admin/AllListings'
 import Transactions from './pages/admin/Transactions'
 import Withdrawal from './pages/admin/Withdrawal'
+import { useAuth, useUser } from '@clerk/clerk-react'
+import { useDispatch } from 'react-redux'
+import { getAllPublicListing, getAllUserListing } from './App/feature/listingSlice'
 
 const App = () => {
 
 
   const { pathname } = useLocation();
+
+  const { getToken } = useAuth();
+  const { user, isLoaded } = useUser();
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getAllPublicListing());
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      dispatch(getAllUserListing({getToken}));
+    }
+  }, [isLoaded, user]);
+
   return (
     <div>
       <Toaster />
@@ -43,7 +62,7 @@ const App = () => {
           <Route path='change-credentials' element={<CredentialChange />} />
           <Route path='list-listings' element={<AllListings />} />
           <Route path='transactions' element={<Transactions />} />
-          <Route path='withdrawal' element={<Withdrawal/>} />
+          <Route path='withdrawal' element={<Withdrawal />} />
         </Route>
       </Routes>
       <ChatBox />

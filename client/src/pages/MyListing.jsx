@@ -1,20 +1,26 @@
 import { ArrowDownCircleIcon, BanIcon, CheckCircle, Clock, CoinsIcon, DollarSign, Edit, Eye, EyeIcon, EyeOffIcon, LockIcon, Plus, StarIcon, TrashIcon, TrendingUp, Users, WalletIcon, XCircle } from 'lucide-react';
 import React, { useState } from 'react'
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import StatCard from '../components/StatCard';
 import { platformIcons } from '../assets/assets';
 import CredentialSubmission from '../components/CredentialSubmission';
 import WithdrawModel from '../components/WithdrawModel';
+import { useAuth } from '@clerk/clerk-react';
+import api from '../configs/axios';
+import { getAllPublicListing, getAllUserListing } from '../App/feature/listingSlice';
+import { toast } from "react-hot-toast";
 
 
 
-
-const MyListing = ({onClose}) => {
+const MyListing = ({ onClose }) => {
 
   const { userListings, balance } = useSelector((state) => state.listing)
   const currency = import.meta.env.VITE_CURRENCY || '$';
   const navigate = useNavigate()
+
+  const { getToken } = useAuth()
+  const dispatch = useDispatch()
 
   const [showCredentialSubmission, setShowCredentialSubmission] = useState(null)
   const [showWithdrawal, setShowWithdrawal] = useState(null)
@@ -67,15 +73,51 @@ const MyListing = ({onClose}) => {
   }
 
   const toggleStatus = async (listingId) => {
-
+    try {
+      toast.loading('Updating listing status...')
+      const token = await getToken();
+      const { data } = await api.put(`/api/listing/${listingId}/status`, {}, { headers: { Authorization: `Bearer ${token}` } })
+      dispatch(getAllUserListing({ getToken }))
+      dispatch(getAllPublicListing())
+      toast.dismissAll();
+      toast.success(data.message);
+    } catch (error) {
+      toast.dismissAll();
+      toast.error(error?.response?.data?.message || error.message);
+    }
   }
 
   const deleteListing = async (listingId) => {
+    try {
+      const confirm = window.confirm('Are you sure you want to delete this listing? if credentials are changed, new credentials will be sent to your email');
+      if (!confirm) return;
 
+      toast.loading('Deleting listing...')
+      const token = await getToken();
+      const { data } = await api.delete(`/api/listing/${listingId}`, { headers: { Authorization: `Bearer ${token}` } })
+      dispatch(getAllUserListing({ getToken }))
+      dispatch(getAllPublicListing())
+      toast.dismissAll();
+      toast.success(data.message);
+    } catch (error) {
+      toast.dismissAll();
+      toast.error(error?.response?.data?.message || error.message);
+    }
   }
 
   const markAsFeatured = async (listingId) => {
-
+    try {
+      toast.loading('featuring listing...')
+      const token = await getToken();
+      const { data } = await api.put(`/api/listing/featured/${listingId}`, {}, { headers: { Authorization: `Bearer ${token}` } })
+      dispatch(getAllUserListing({ getToken }))
+      dispatch(getAllPublicListing())
+      toast.dismissAll();
+      toast.success(data.message);
+    } catch (error) {
+      toast.dismissAll();
+      toast.error(error?.response?.data?.message || error.message);
+    }
   }
 
   return (
@@ -116,7 +158,7 @@ const MyListing = ({onClose}) => {
           { label: 'Withdrawn', value: balance.withdrawn, icon: ArrowDownCircleIcon },
           { label: 'Available', value: balance.available, icon: CoinsIcon },
         ].map((item, index) => (
-          <div onClick={()=> item.label === "Available"  && setShowWithdrawal(true)} key={index} className='flex flex-1 items-center justify-between p-4 rounded-lg border border-gray-100 cursor-pointer'>
+          <div onClick={() => item.label === "Available" && setShowWithdrawal(true)} key={index} className='flex flex-1 items-center justify-between p-4 rounded-lg border border-gray-100 cursor-pointer'>
             <div className='flex items-center gap-3'>
               <item.icon className='text-gray-500 w-6 h-6' />
               <span className='font-medium text-gray-600'>{item.label}</span>
@@ -160,7 +202,7 @@ const MyListing = ({onClose}) => {
                             <div className='bg-white text-gray-600 text-xs rounded border border-gray-200 p-2 px-3'>
                               {!listing.isCredentialSubmitted && (
                                 <>
-                                  <button onClick={()=> setShowCredentialSubmission(listing)} className='flex items-center gap-2 text-nowrap'>Add Credentials</button>
+                                  <button onClick={() => setShowCredentialSubmission(listing)} className='flex items-center gap-2 text-nowrap'>Add Credentials</button>
                                   <hr className='border-gray-200 my-2' />
                                 </>
                               )}
@@ -242,11 +284,11 @@ const MyListing = ({onClose}) => {
       )}
 
       {showCredentialSubmission && (
-        <CredentialSubmission  listing={showCredentialSubmission} onClose={()=> setShowCredentialSubmission(null)}/>
+        <CredentialSubmission listing={showCredentialSubmission} onClose={() => setShowCredentialSubmission(null)} />
       )}
 
       {showWithdrawal && (
-        <WithdrawModel onClose={()=> setShowWithdrawal(null)}/>
+        <WithdrawModel onClose={() => setShowWithdrawal(null)} />
       )}
 
       {/* Footer */}
