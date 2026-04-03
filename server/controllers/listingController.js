@@ -2,9 +2,6 @@ import imagekit from "../configs/imageKit.js";
 import prisma from "../configs/prisma.js";
 import fs from 'fs'
 
-
-
-
 // Controller For Adding Listing to Database
 export const addListing = async (req, res) => {
     try {
@@ -41,7 +38,6 @@ export const addListing = async (req, res) => {
             return response.url
         })
 
-        // Wait for all uploads to complete
         const images = await Promise.all(uploadImages);
 
         const listing = await prisma.listing.create({
@@ -55,7 +51,7 @@ export const addListing = async (req, res) => {
         return res.status(201).json({ message: "Account Listed successfully", listing });
 
     } catch (error) {
-        consolr.log(error);
+        console.log(error); // FIXED
         res.status(500).json({ message: error.code || error.message });
     }
 }
@@ -69,24 +65,19 @@ export const getAllPublicListing = async (req, res) => {
             orderBy: { createdAt: "desc" },
         })
 
-        if (!listings || listings.length === 0) {
-            return res.json({ listings: [] });
-        }
-        return res.json({ listings });
+        return res.json({ listings: listings || [] });
 
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: error.code || error.message });
+        return res.status(500).json({ listings: [], message: error.code || error.message });
     }
 }
-
-
 
 // Controller For Getting All User Listing
 export const getAllUserListing = async (req, res) => {
     try {
         const { userId } = await req.auth();
-        // get all listings except deleted
+
         const listings = await prisma.listing.findMany({
             where: { ownerId: userId, status: { not: "deleted" } },
             orderBy: { createdAt: "desc" },
@@ -102,11 +93,8 @@ export const getAllUserListing = async (req, res) => {
             available: user.earned - user.withdrawn,
         }
 
-        if (!listings || listings.length === 0) {
-            return res.json({ listings: [], balance });
-        }
+        return res.json({ listings: listings || [], balance });
 
-        return res.json({ listings, balance });
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: error.code || error.message });
@@ -158,10 +146,9 @@ export const updateListing = async (req, res) => {
                 return response.url
             })
 
-            // Wait for all uploads to complete
             const images = await Promise.all(uploadImages);
 
-            const listing = await prisma.listing.update({
+            const updatedListing = await prisma.listing.update({
                 where: { id: accountDetails.id, ownerId: userId },
                 data: {
                     ownerId: userId,
@@ -170,8 +157,9 @@ export const updateListing = async (req, res) => {
                 }
             })
 
-            return res.json({ message: "Account Updated successfully", listing });
+            return res.json({ message: "Account Updated successfully", listing: updatedListing });
         }
+
         return res.json({ message: "Account Updated successfully", listing });
 
     } catch (error) {
@@ -230,9 +218,7 @@ export const deleteUserListing = async (req, res) => {
             return res.status(400).json({ message: "sold listing can't be deleted" });
         }
 
-        // If password has been changed, send the new password to the owner
         if (listing.isCredentialChanged) {
-            // send email to owner
         }
 
         await prisma.listing.update({
@@ -293,13 +279,11 @@ export const markFeatured = async (req, res) => {
             return res.status(400).json({ message: "Premium plan required" });
         }
 
-        // Unset all other featured listings
         await prisma.listing.updateMany({
             where: { ownerId: userId },
             data: { featured: false },
         })
 
-        // Mark the listing as featured 
         await prisma.listing.update({
             where: { id },
             data: { featured: true },
@@ -313,7 +297,6 @@ export const markFeatured = async (req, res) => {
     }
 }
 
-
 export const getAllUserOrders = async (req, res) => {
     try {
         const { userId } = await req.auth();
@@ -326,7 +309,6 @@ export const getAllUserOrders = async (req, res) => {
             return res.json({ orders: [] });
         }
 
-        // Attach the credential to each order
         const credentials = await prisma.credential.findMany({
             where: { listingId: { in: orders.map((order) => order.listingId) } }
         })
