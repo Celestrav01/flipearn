@@ -165,14 +165,15 @@ const MyListing = ({ onClose }) => {
             </div>
             <span>
               {currency}
-              {item.value.toFixed(2)}
+              {/* {item.value.toFixed(2)} */}
+              {(item.value || 0).toFixed(2)}
             </span>
           </div>
         ))}
       </div>
 
       {/* Listings */}
-      {userListings.length === 0 ? (
+      {(userListings?.length || 0) === 0 ? (
         <div className='bg-white rounded-lg border border-gray-200 p-16 text-center'>
           <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
             <Plus className='w-8 h-8 text-gray-400' />
@@ -185,7 +186,7 @@ const MyListing = ({ onClose }) => {
         </div>
       ) : (
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {userListings.map((listing) => (
+          {(userListings || []).map((listing) => (
             <div key={listing.id}
               className='bg-white rounded-lg border border-gray-200 hover:shadow-lg shadow-gray-200/70 transition-shadow'>
 

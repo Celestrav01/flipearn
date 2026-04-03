@@ -22,7 +22,7 @@ export const getAllUserListing = createAsyncThunk(
     async ({ getToken }) => {
         try {
             const token = await getToken();
-            const { data } = await api.get('api/listing/user', {
+            const { data } = await api.get('/api/listing/user', {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -55,12 +55,19 @@ const listingSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder.addCase(getAllPublicListing.fulfilled, (state, action) => {
-            state.listings = action.payload.listings;
+            // state.listings = action.payload.listings;
+            state.listings = action.payload?.listings || [];
         });
 
         builder.addCase(getAllUserListing.fulfilled, (state, action) => {
-            state.userListings = action.payload.listings;
-            state.balance = action.payload.balance;
+            // state.userListings = action.payload.listings;
+            // state.balance = action.payload.balance;
+            state.userListings = action.payload?.listings || [];
+            state.balance = action.payload?.balance || {
+                earned: 0,
+                withdrawn: 0,
+                available: 0
+            };
         });
     }
 })
